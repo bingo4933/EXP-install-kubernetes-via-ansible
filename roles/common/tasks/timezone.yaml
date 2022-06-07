@@ -1,0 +1,27 @@
+- block:
+    - name: set time zone to Asian ShangHai
+      shell: "timedatectl set-timezone Asia/Shanghai warn=False"
+      register: timedatectl_timezone
+
+    - name: set local rtc
+      shell: "timedatectl set-local-rtc 0"
+      register: timedatectl_rtc
+
+    - name: restart rsyslog service
+      systemd:
+        name: rsyslog
+        state: restarted
+
+    - name: restart crond service
+      systemd:
+        name: crond
+        state: restarted
+  rescue:
+    - when: >
+        (
+          timedatectl_timezone.rc != 0 or
+          timedatectl_rtc.rc != 0
+        )
+      debug:
+        msg: {msg: 'Setting timedatectl failed, Please check it'}
+      

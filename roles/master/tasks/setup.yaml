@@ -1,0 +1,135 @@
+- block:
+    - name: create Workspace
+      file:
+        dest: "{{ k8s_work_dir }}/{{ item }}"
+        state: directory
+      loop:
+        - bin
+        - cfg
+        - ssl
+        - logs
+    
+    - name: create etcd certificate directory
+      file:
+        dest: "{{ k8s_work_dir }}/ssl/etcd"
+        state: directory
+    
+    - name: create temporary directory
+      tempfile:
+        state: directory
+        suffix: .master
+      register: tmp_dir
+    
+    - name: transport binary package to temporary directory
+      unarchive:
+        src: "{{ item }}"
+        dest: "{{ tmp_dir.path }}"
+      with_fileglob:
+        - "{{ software_dir }}/kubernetes-*.tar.gz"
+    
+    - name: deploy binary package to work space
+      shell: cp -rf {{ tmp_dir.path }}/kubernetes/server/bin/{kube-apiserver,kube-controller-manager,kube-scheduler} {{ k8s_work_dir }}/bin && \
+             cp -rf {{ tmp_dir.path }}/kubernetes/server/bin/kubectl /usr/bin
+    
+    - name: deploy kubernetes certificate
+      copy:
+        src: k8s_cert/{{ item }}
+        dest: "{{ k8s_work_dir }}/ssl"
+      loop:
+        - ca.pem
+        - ca-key.pem
+        - server.pem
+        - server-key.pem
+        - kube-controller-manager.pem
+        - kube-controller-manager-key.pem
+        - kube-scheduler.pem
+        - kube-scheduler-key.pem
+        - admin.pem
+        - admin-key.pem
+    
+    - name: deploy etcd certificate
+      copy:
+        src: etcd_cert/{{ item }}
+        dest: "{{ k8s_work_dir }}/ssl/etcd"
+      loop:
+        - ca.pem
+        - server.pem
+        - server-key.pem
+    
+    - name: deploy token file
+      copy:
+        src: token.csv
+        dest: "{{ k8s_work_dir }}/cfg"
+    
+    - name: deploy configuration files
+      template:
+        src: "{{ item }}"
+        dest: "{{ k8s_work_dir }}/cfg/{{ item.split('.')[:-1]|join('.') }}"
+      loop:
+        - kube-apiserver.conf.j2
+        - kube-controller-manager.conf.j2
+        - kube-scheduler.conf.j2
+        - kube-controller-manager.kubeconfig.j2
+        - kube-scheduler.kubeconfig.j2
+    
+    - name: deploy service files
+      template:
+        src: "{{ item }}"
+        dest: /usr/lib/systemd/system/{{ item.split('.')[:-1]|join('.') }}
+      loop:
+        - kube-apiserver.service.j2
+        - kube-controller-manager.service.j2
+        - kube-scheduler.service.j2
+    
+    - name: launch kubernetes master component
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+      loop:
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler
+    
+    - name: create configuration file directory for kubelet
+      file:
+        dest: /root/.kube
+        state: directory
+
+    - name: deploy kubernetes configuration file
+      template:
+        src: config.j2
+        dest: /root/.kube/config
+    
+    - name: check cluster status
+      shell: sleep 3 && kubectl get cs
+      register: cs
+    - debug: var=cs.stdout_lines
+    
+    - name: deploy RBAC
+      copy:
+        src: "{{ item }}"
+        dest: "{{ tmp_dir.path }}"
+      loop:
+        - kubelet-bootstrap-rbac.yaml
+        - apiserver-to-kubelet-rbac.yaml
+    
+    - name: approve APIServer to access kubelet and approve kubelet bootstrap
+      ignore_errors: yes
+      shell: |
+          sleep 3
+          kubectl apply -f {{ tmp_dir.path }}/apiserver-to-kubelet-rbac.yaml
+          kubectl apply -f {{ tmp_dir.path }}/kubelet-bootstrap-rbac.yaml
+
+    - name: approve kubelet certificate automatically
+      ignore_errors: yes
+      shell: |
+         # automatically approve CSR request of application to certificate at first time
+         kubectl create clusterrolebinding node-client-auto-approve-csr --clusterrole=system:certificates.k8s.io:certificatesigningrequests:nodeclient --user=kubelet-bootstrap 
+         # automatically approve Renewal client certificate of kubelet
+         kubectl create clusterrolebinding node-client-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeclient --group=system:nodes 
+         # automatically approve Renewal server side certificate of kubelet
+         kubectl create clusterrolebinding node-server-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeserver --group=system:nodes
+  always:
+    - file: {path: "{{ tmp_dir.path }}", state: absent}

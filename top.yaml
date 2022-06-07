@@ -1,0 +1,65 @@
+---
+- name: common setting
+  remote_user: root
+  gather_facts: false
+  hosts: k8s
+  roles:
+    - role: common
+  tags: common
+
+- name: chrony time synchronization chrony-main
+  hosts: time_server
+  gather_facts: false
+  roles:
+    - role: chrony-main
+  tags: chrony-main
+
+- name: chrony time synchronization chrony-client
+  hosts: time_client
+  gather_facts: false
+  roles:
+    - role: chrony-client
+  tags: chrony-client
+
+- name: signature certificate
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: tls
+  tags: tls
+
+- name: deploy Docker
+  hosts: k8s
+  gather_facts: false
+  roles:
+    - role: docker
+  tags: docker
+
+- name: deploy etcd
+  hosts: etcd
+  gather_facts: false
+  roles:
+    - role: etcd
+  tags: etcd
+
+- name: deploy master node
+  hosts: master
+  gather_facts: false
+  roles:
+    - role: master
+  tags: master
+
+# work node include master host in this cluster
+- name: deploy work node
+  hosts: k8s
+  gather_facts: false
+  roles:
+    - role: node
+  tags: node
+
+- name: deploy plugin component
+  hosts: master
+  gather_facts: false
+  roles:
+    - role: plugin
+  tags: plugin

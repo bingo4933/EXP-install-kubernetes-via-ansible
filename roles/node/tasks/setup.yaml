@@ -1,0 +1,88 @@
+- block:
+    - name: create Workspace
+      file:
+        dest: "{{ k8s_work_dir }}/{{ item }}"
+        state: directory
+      loop:
+        - bin
+        - cfg
+        - ssl
+        - logs
+    
+    - name: create cni plugin directory
+      file:
+        dest: "{{ item }}"
+        state: directory
+      loop:
+        - /opt/cni/bin
+        - /etc/cni/net.d
+    
+    - name: create temporary directory
+      tempfile: {state: directory, suffix: .work}
+      register: tmp_dir
+
+    - name: transport and uncompress binary package which need take some time
+      unarchive:
+        src: "{{ item }}"
+        dest: "{{ tmp_dir.path }}"
+      with_fileglob:
+        - "{{ software_dir }}/kubernetes-*.tar.gz"
+    
+    - name: transport and uncompress cni plugin package
+      unarchive:
+        src: "{{ item }}"
+        dest: /opt/cni/bin
+      with_fileglob:
+        - "{{ software_dir }}/cni-plugins-*.tgz"
+    
+    - name: deploy kubelet and kube-proxy binary package
+      shell: cp -rf {{ tmp_dir.path }}/kubernetes/server/bin/{kubelet,kube-proxy} {{ k8s_work_dir }}/bin
+    
+    - name: deploy kubernetes certificate
+      copy:
+        src: k8s_cert/{{ item }}
+        dest: "{{ k8s_work_dir }}/ssl"
+      loop:
+        - ca.pem
+        - kube-proxy.pem
+        - kube-proxy-key.pem
+    
+    - name: deploy configuration file of kubelet and kube-proxy
+      template:
+        src: "{{ item }}"
+        dest: "{{ k8s_work_dir }}/cfg/{{ item.split('.')[:-1]|join('.') }}"
+      loop:
+        - bootstrap.kubeconfig.j2
+        - kubelet.conf.j2
+        - kubelet-config.yml.j2
+        - kube-proxy.kubeconfig.j2
+        - kube-proxy.conf.j2
+        - kube-proxy-config.yml.j2
+    
+    - name: deploy service files
+      template:
+        src: "{{ item }}"
+        dest: /usr/lib/systemd/system/{{ item.split('.')[:-1]|join('.') }}
+      loop:
+        - kubelet.service.j2
+        - kube-proxy.service.j2
+        
+    - name: launch kubernetes node component
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+      loop:
+        - kubelet
+        - kube-proxy
+    
+    - name: deploy pre-configuration image
+      copy:
+        src: "{{ software_dir }}/image.tar.gz"
+        dest: "{{ tmp_dir.path }}"
+    
+    - name: load docker image
+      shell: cd {{ tmp_dir.path }} && \
+             tar zxf image.tar.gz && \
+             for image in $(ls *.tar);do docker load < $image;done

@@ -1,0 +1,21 @@
+- block:
+    - tempfile: {state: directory, suffix: .kernel}
+      register: tmp_dir
+
+    - name: copy relevant files
+      copy:
+        src: "{{ software_dir }}/{{ item.src }}"
+        dest: "{{ tmp_dir.path }}"
+      loop:
+        - { src: "elrepo-release-7.0-3.el7.elrepo.noarch.rpm" }
+        - { src: "RPM-GPG-KEY-elrepo.org" }
+        - { src: "kernel-lt-5.4.190-1.el7.elrepo.x86_64.rpm" }
+        - { src: "kernel.sh" }
+
+    - name: run script to upgrade kernel
+      raw: "cd {{ tmp_dir.path }} &&  /bin/bash kernel.sh"
+      delegate_to: "{{ inventory_hostname }}"
+  rescue:
+    - debug: {msg: "copy relevant file of kernel occurred error. Please check source files"}
+  always:
+    - file: {path: "{{ tmp_dir.path }}", state: absent}

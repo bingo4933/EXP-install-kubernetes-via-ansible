@@ -1,0 +1,14 @@
+- block:
+    - name: turn off unnecessary service
+      systemd:
+        name: postfix
+        state: stopped
+      register: postfix_stop_output
+
+    - name: disable unnecessary service
+      shell:
+        cmd: "systemctl disable postfix"
+      register: postfix_disable_output
+  rescue:
+    - when: (postfix_stop_output.rc != 0) or (postfix_disable_output.rc != 0)
+      debug: {msg: 'System postfix service might does not existed. Please check it manually'}

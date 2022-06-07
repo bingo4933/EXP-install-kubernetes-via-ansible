@@ -1,0 +1,14 @@
+- block:
+    - name: transport kernel setting file
+      copy:
+        src: kubernetes.conf
+        dest: /etc/sysctl.d/
+        backup: yes
+
+    - name: apply kernel parameter
+      shell: "sysctl -p /etc/sysctl.d/kubernetes.conf"
+      register: sysctl_output
+      changed_when: false
+  rescue:
+    - when: sysctl_output.rc != 0
+      debug: {msg: "sysctl command applied but got abnormal state. Please check it"}

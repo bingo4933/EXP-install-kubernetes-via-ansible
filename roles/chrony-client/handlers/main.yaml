@@ -1,0 +1,5 @@
+- name: restart service
+  systemd:
+    name: chronyd
+    state: restarted
+    enabled: yes

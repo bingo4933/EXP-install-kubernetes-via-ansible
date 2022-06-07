@@ -1,0 +1,10 @@
+- block:
+    - name: restart service
+      systemd:
+        name: chronyd
+        state: started
+
+    - name: enable chronyd service
+      systemd:
+        name: chronyd
+        enabled: yes

@@ -1,0 +1,36 @@
+- block:
+    - name: install chrony
+      yum:
+        name: chrony
+
+    - name: client action to stop chrony service
+      systemd:
+        name: chronyd
+        state: stopped
+
+    - name: comment out original time server
+      replace:
+        path=/etc/chrony.conf
+        regexp="^(server\s*.*$)"
+        replace="#\g<1>"
+
+    - name: add new time server
+      lineinfile:
+        path=/etc/chrony.conf
+        insertafter="^(#server\s*.*$)"
+        line="server 10.4.7.73 iburst"
+        backrefs=no
+
+    - name: add LAN sync
+      lineinfile:
+        path=/etc/chrony.conf
+        insertafter="^(#allow\s*.*$)"
+        line="allow 10.4.7.0/24"
+        backrefs=no
+      notify: restart service
+
+    - name: setting schedule job
+      cron:
+        name: Synctime-1min
+        minute: "*/1"
+        job: "/usr/bin/chronyc makestep > /dev/null 2>&1"

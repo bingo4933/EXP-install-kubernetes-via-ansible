@@ -1,0 +1,64 @@
+- block:
+    - name: create Workspace
+      file:
+        dest: "{{ etcd_work_dir }}/{{ item }}"
+        state: directory
+      loop:
+        - bin
+        - cfg
+        - ssl
+    
+    - name: create temporary directory
+      tempfile:
+        state: directory
+        suffix: .etcd
+      register: tmp_dir
+    
+    - name: transport binary package of ETCD
+      unarchive:
+        src: "{{ item }}"
+        dest: "{{ tmp_dir.path }}"
+      with_fileglob:
+        - "{{ software_dir }}/etcd-v*.tar.gz"
+    
+    - name: deploy binary package
+      shell: cp -rf {{ tmp_dir.path }}/etcd-v*/{etcd,etcdctl} {{ etcd_work_dir }}/bin
+    
+    - name: deploy certificate
+      copy:
+        src: etcd_cert/{{ item }}
+        dest: "{{ etcd_work_dir }}/ssl"
+      loop:
+        - ca.pem
+        - server.pem
+        - server-key.pem
+    
+    - name: deploy configuration files
+      template:
+        src: etcd.conf.j2
+        dest: "{{ etcd_work_dir }}/cfg/etcd.conf"
+    
+    - name: deploy service files
+      template:
+        src: etcd.service.j2
+        dest: /usr/lib/systemd/system/etcd.service
+        
+    - name: launch etcd
+      systemd:
+        name: etcd
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+    
+    - name: transport script file
+      template:
+        src: etcd.sh.j2
+        dest: "{{ tmp_dir.path }}/etcd.sh"
+        mode: u+x
+    
+    - name: get etcd cluster status
+      shell: /bin/bash {{ tmp_dir.path }}/etcd.sh
+      register: status 
+    - debug: var=status.stdout_lines
+  always:
+    - file: {path: "{{ tmp_dir.path }}", state: absent}

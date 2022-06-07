@@ -1,0 +1,36 @@
+####
+#          IP scheme
+#
+#    master01: 10.4.7.73
+#    worker01: 10.4.7.75
+#    worker02: 10.4.7.76
+#
+#    etcd-1: 10.4.7.73
+#    etcd-2: 10.4.7.74
+#    etcd-3: 10.4.7.75
+####
+[k8s:children]
+master
+node
+
+[master]
+10.4.7.73 node_name="k8s-master01.k8s-via-ansible.com" short_name="k8s-master01"
+
+[node]
+10.4.7.75 node_name="k8s-worker01.k8s-via-ansible.com" short_name="k8s-worker01"
+10.4.7.76 node_name="k8s-worker02.k8s-via-ansible.com" short_name="k8s-worker02"
+
+[time_server]
+10.4.7.73
+
+[time_client]
+10.4.7.75
+10.4.7.76
+
+[etcd]
+10.4.7.73 etcd_name=etcd-1
+10.4.7.75 etcd_name=etcd-3
+10.4.7.76 etcd_name=etcd-2
+
+[new]
+#10.4.7.77 node_name="k8s-worker03.k8s-via-ansible.com" short_name="k8s-worker03"

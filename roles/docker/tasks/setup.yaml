@@ -1,0 +1,44 @@
+- block:
+    - name: create temporary directory
+      tempfile: {state: directory, suffix: .docker}
+      register: tmp_dir
+
+    - name: transport binary package of DOCKER
+      unarchive:
+        src: "{{ item }}"
+        dest: "{{ tmp_dir.path }}"
+      with_fileglob:
+        - "{{ software_dir }}/docker-*.tgz"
+
+    - name: deploy binary package
+      raw: cp -rf {{ tmp_dir.path }}/docker/* /usr/bin
+
+    - name: transport service file of DOCKER
+      copy:
+        src: docker.service
+        dest: /usr/lib/systemd/system/
+
+    - name: create configuration directory of DOCKER
+      file:
+        dest: /etc/docker
+        state: directory
+
+    - name: configurate DOCKER
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+
+    - name: launch DOCKER
+      systemd:
+        name: docker
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+
+    - name: verify docker status
+      shell: docker info
+      register: docker
+    - debug: var=docker.stdout_lines
+
+  always:
+    - file: {path: "{{ tmp_dir.path }}", state: absent}

@@ -1,0 +1,80 @@
+- block:
+    - name: truncate to get work directory
+      shell: pwd | sed 's#roles/tls##'
+      register: root_dir
+
+    - name: create work directory
+      file:
+        dest: "{{ root_dir.stdout }}/ssl/{{ item }}"
+        state: directory
+      loop:
+        - etcd
+        - k8s
+
+    - name: prepare cfssl
+      unarchive:
+        src: "{{ software_dir }}/cfssl.tar.gz"
+        dest: /usr/bin/
+        mode: u+x
+
+    - name: prepare certificate request file of ETCD
+      template:
+        src: "etcd/{{ item }}"
+        dest: "{{ root_dir.stdout }}/ssl/etcd/{{ item.split('.')[:-1] | join('.') }}"
+      loop:
+        - ca-config.json.j2
+        - ca-csr.json.j2
+        - server-csr.json.j2
+
+    - name: prepare certificate script to generate for ETCD
+      copy:
+        src: generate_etcd_cert.sh
+        dest: "{{ root_dir.stdout }}/ssl/etcd"
+        mode: u+x
+
+    - name: generate ETCD certificate
+      shell: cd {{ root_dir.stdout }}/ssl/etcd && /bin/bash generate_etcd_cert.sh
+
+    - name: prepare certificate request file for KUBERNETES
+      template:
+        src: k8s/{{ item }}
+        dest: "{{ root_dir.stdout }}/ssl/k8s/{{ item.split('.')[:-1] | join('.') }}"
+      loop:
+        - ca-config.json.j2
+        - ca-csr.json.j2
+        - server-csr.json.j2
+        - kube-proxy-csr.json.j2
+        - kube-controller-manager-csr.json.j2
+        - kube-scheduler-csr.json.j2
+        - admin-csr.json.j2
+
+    - name: prepare certificate script to generate for KUBERNETES
+      copy:
+        src: generate_k8s_cert.sh
+        dest: "{{ root_dir.stdout }}/ssl/k8s"
+        mode: u+x
+
+    - name: generate certificate for KUBERNETES
+      shell: cd {{ root_dir.stdout }}/ssl/k8s && /bin/bash generate_k8s_cert.sh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

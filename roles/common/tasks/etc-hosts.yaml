@@ -1,0 +1,11 @@
+- block:
+  - name: add mapping to /etc/hosts
+    template:
+      src: etc-hosts.j2
+      dest: /etc/hosts
+      backup: yes
+    register: etcd_output
+  
+  rescue:
+    - when: etcd_output.rc != 0
+      debug: {msg: "setting to etcd hosts file failed, Please check it"}

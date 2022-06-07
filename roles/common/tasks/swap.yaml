@@ -1,0 +1,12 @@
+- block:
+    - name: Get fstab file
+      set_fact: {fstab_file: "{{ lookup('file', '/etc/fstab') | trim }}"}
+      register: fstab_output
+      changed_when: false
+
+    - name: turn off swap
+      shell:
+        cmd: "swapoff -a && cp /etc/fstab{,.bak} && sed -i 's/.* swap/#&/g' /etc/fstab"
+  rescue:
+    - when: fstab_output.failed != 'false'
+      debug: {msg: 'check file fstab file failed, Please check it manually'}

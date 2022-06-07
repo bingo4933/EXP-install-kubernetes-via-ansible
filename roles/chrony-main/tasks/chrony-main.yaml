@@ -1,0 +1,49 @@
+- block:
+    - name: get ntpdate
+      yum:
+        name: ["ntpdate", "chrony"]
+
+    - name: sync to external time server
+      shell: /usr/sbin/ntpdate ntp1.aliyun.com
+      args:
+        executable: /bin/bash
+
+    - name: stop chrony
+      systemd:
+        name: chronyd
+        state: stopped
+
+    - name: comment out original time server
+      replace:
+        path=/etc/chrony.conf
+        regexp="^(server\s*.*$)"
+        replace="#\g<1>"
+
+    - name: add new time server configuration
+      blockinfile:
+        path=/etc/chrony.conf
+        insertafter="^(#server\s*.*$)"
+        marker="# {mark} ANSIBLE MANAGED BLOCK"
+        block="server 10.4.7.73 iburst"
+        backup=yes
+
+    - name: add LAN configuration
+      lineinfile:
+        path=/etc/chrony.conf
+        insertafter="^(#allow\s*.*$)"
+        line="allow 10.4.7.0/24"
+        backrefs=no
+
+    - name: add LAN configuration
+      lineinfile:
+        path=/etc/chrony.conf
+        insertafter="^(#local\s*.*$)"
+        line="local stratum 10"
+        backrefs=no
+      notify: restart service
+    
+    - name: setting schedule job
+      cron:
+        name: Synctime-3min
+        minute: "*/2"
+        job: "/usr/sbin/ntpdate ntp1.aliyun.com > /dev/null 2>&1"

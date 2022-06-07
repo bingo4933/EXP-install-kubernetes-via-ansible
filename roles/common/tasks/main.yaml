@@ -1,0 +1,11 @@
+- import_tasks: etc-hosts.yaml
+- import_tasks: hostname.yaml
+- import_tasks: firewall.yaml
+- import_tasks: selinux.yaml
+- import_tasks: swap.yaml
+- import_tasks: timezone.yaml
+- import_tasks: turnoffunnecessaryservice.yaml
+- import_tasks: setrsyslog.yaml
+- import_tasks: adjustKernelParameter.yaml
+- import_tasks: ipvs.yaml
+- import_tasks: upgradekernel.yaml

@@ -1,0 +1,9 @@
+- block:
+  - name: change machine's hostname
+    hostname:
+      name: "{{ node_name }}"
+    register: node_name_output
+
+  rescue:
+    - when: node_name_output.rc != 0
+      debug: {msg: "node name setting failed, Please check it"}

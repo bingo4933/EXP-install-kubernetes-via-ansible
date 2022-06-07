@@ -1,0 +1,20 @@
+- block:
+  - name: get state of selinux
+    shell:
+      cmd: "getenforce"
+    changed_when: false
+    register: selinux_status
+
+  - name: temporarily change selinux
+    shell:
+      cmd: "setenforce 0"
+    when: selinux_status.stdout != 'Disabled'
+  
+  - name: disable selinux
+    lineinfile:
+      dest: /etc/selinux/config
+      regexp: '^SELINUX='
+      line: 'SELINUX=disabled'
+    when: selinux_status.stdout != 'Disabled'
+  rescue:
+    - debug: {msg: 'Set selinux configuration in file failed, Please check it'}

@@ -1,0 +1,43 @@
+#- name: allow node participate to cluster
+#  ignore_errors: yes
+#  shell: kubectl certificate approve $(kubectl get csr |awk 'NR!=1{print $1}')
+
+- name: create temporary directory
+  tempfile: {state: directory, suffix: .plugin}
+  register: tmp_dir
+
+- name: transport yaml file
+  copy:
+    src: "{{ item }}"
+    dest: "{{ tmp_dir.path }}"
+  with_fileglob:
+    - "*.yaml"
+
+- name: deploy calico coredns dashboard and ingress
+  ignore_errors: yes
+  shell: |
+         cd {{ tmp_dir.path }}
+         for yaml in $(ls *.yaml);do kubectl apply -f $yaml;done
+
+- name: check pod status
+  shell: kubectl get all --all-namespaces
+  register: pod_status
+- debug: var=pod_status.stdout_lines
+
+- name: create admin token of dashboard
+  ignore_errors: yes 
+  shell: |
+         kubectl create serviceaccount dashboard-admin -n kubernetes-dashboard
+         kubectl create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:dashboard-admin
+
+- name: get those token
+  ignore_errors: yes
+  shell: |
+         web='https://NodeIP:30001'
+         token=$(kubectl describe secrets -n kubernetes-dashboard \
+         $(kubectl get secret -n kubernetes-dashboard | awk '/dashboard-admin/{print $1}') |awk '/^token/{print $2}')
+         echo "Access URL ---> $web"
+         echo "Token content ---> $token" 
+  register: ui
+- name: kubernete dashobard information
+  debug: var=ui.stdout_lines

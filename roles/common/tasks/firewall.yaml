@@ -1,0 +1,15 @@
+- block:
+  - name: check firewalld status
+    shell: "ps aux | grep firewall | grep -v grep | wc -l"
+    register: firewall
+  
+  - name: stop firewall if it going
+    systemd:
+      name: firewalld
+      state: stopped
+    when: firewall.stdout != "0"
+  
+  - name: disable firewall
+    shell:
+      cmd: "systemctl disable firewalld"
+    when: firewall.stdout != "0"

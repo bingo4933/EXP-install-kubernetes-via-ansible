@@ -1,0 +1,15 @@
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "registry-mirrors": [
+    "https://registry.docker-cn.com",
+    "http://hub-mirror.c.163.com",
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://owkqm1n2.mirror.aliyuncs.com"
+  ],
+  "live-restore": true,
+  "insecure-registries": ["https://hub.your-site.com","https://10.4.7.100","https://10.4.7.70","10.4.7.70"]
+}
