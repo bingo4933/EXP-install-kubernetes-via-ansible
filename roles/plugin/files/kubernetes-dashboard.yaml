@@ -194,6 +194,9 @@ spec:
           ports:
             - containerPort: 8443
               protocol: TCP
+          env:
+            - name: ACCEPT_LANGUAGE
+              value: english
           args:
             - --auto-generate-certificates
             - --namespace=kubernetes-dashboard

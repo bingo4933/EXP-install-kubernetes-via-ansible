@@ -1,11 +1,14 @@
 # install-kubernetes-via-ansible
-### this is v1 branch which single master
+
+### branch v2-multi-master
 
 - following up the tags as step in `top.yaml` file
 
-  >  \# common setting of system
+  > \# common setting of system
   >
   > $ ansible-playbook -t common top.yaml
+
+
 
 - If we need to deploy internal time service, Please follow command:
 
@@ -13,7 +16,8 @@
   >
   > $ ansible-playbook -t chrony-main top.yaml
 
-  >  \# this is time client
+  >
+  > \# this is time client
   >
   > $ ansible-playbook -t chrony-client top.yaml
 
@@ -43,6 +47,8 @@
   >
   > $ ansible-playbook -t plugin top.yaml
 
+
+
 - if need append new  work node to cluster, Please follow the command as below
 
   > $ ansible-playbook  -l new -t common top.yaml 
@@ -55,9 +61,9 @@
 
 ---
 
-#### **expected warning**
+#### expected warning
 
-- when running step of `upgrade` may occur lost connection issue as relevant nodes were rebooted
+- when running step to `upgrade` may occur lost connection issue as relevant nodes were rebooted
 
   ![expected warning 06](https://gitee.com/bingo4933/blogimage/raw/master/img/Image%206.png)
 

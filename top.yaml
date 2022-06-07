@@ -2,7 +2,7 @@
 - name: common setting
   remote_user: root
   gather_facts: false
-  hosts: k8s
+  hosts: all
   roles:
     - role: common
   tags: common
@@ -48,6 +48,13 @@
   roles:
     - role: master
   tags: master
+
+- name: deploy LB
+  hosts: lb
+  gather_facts: false
+  roles:
+    - role: ha
+  tags: ha
 
 # work node include master host in this cluster
 - name: deploy work node

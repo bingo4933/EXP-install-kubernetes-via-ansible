@@ -1,0 +1,41 @@
+{% if lb_name == 'lb-master' %}
+  {% set role = 'MASTER' %}
+  {% set priority = 100 %}
+{% elif lb_name == 'lb-backup' %}
+  {% set role = 'BACKUP' %}
+  {% set priority = 90 %}
+{% endif %}
+ 
+global_defs { 
+   notification_email { 
+     acassen@firewall.loc 
+     failover@firewall.loc 
+     sysadmin@firewall.loc 
+   } 
+   notification_email_from Alexandre.Cassen@firewall.loc  
+   smtp_server 127.0.0.1 
+   smtp_connect_timeout 30 
+   router_id NGINX_{{ role }}
+} 
+
+vrrp_script check_nginx {
+    script "/etc/keepalived/check_nginx.sh"
+}
+
+vrrp_instance VI_1 { 
+    state {{ role }} 
+    interface {{ nic }}
+    virtual_router_id 51 # ID instance of VRRP route, keep it unique
+    priority {{  priority }}    # set priority 
+    advert_int 1    # advertise internal of VRRP heartbeat, default is 1 sec. 
+    authentication { 
+        auth_type PASS      
+        auth_pass 1111 
+    }  
+    virtual_ipaddress { 
+        {{ vip }}/24
+    } 
+    track_script {
+        check_nginx
+    } 
+}

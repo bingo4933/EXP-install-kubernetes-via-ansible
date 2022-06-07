@@ -1,13 +1,18 @@
 ####
 #          IP scheme
+#    vip      : 10.4.7.70 
+#    lb-master: 10.4.7.71
+#    lb-backup: 10.4.7.72
 #
-#    master01: 10.4.7.73
-#    worker01: 10.4.7.75
-#    worker02: 10.4.7.76
+#    master01 : 10.4.7.73
+#    master02 : 10.4.7.74
 #
-#    etcd-1: 10.4.7.73
-#    etcd-2: 10.4.7.74
-#    etcd-3: 10.4.7.75
+#    worker01 : 10.4.7.75
+#    worker02 : 10.4.7.76
+#
+#    etcd-1   : 10.4.7.73
+#    etcd-2   : 10.4.7.74
+#    etcd-3   : 10.4.7.75
 ####
 [k8s:children]
 master
@@ -15,6 +20,11 @@ node
 
 [master]
 10.4.7.73 node_name="k8s-master01.k8s-via-ansible.com" short_name="k8s-master01"
+10.4.7.74 node_name="k8s-master02.k8s-via-ansible.com" short_name="k8s-master02"
+
+[lb]
+10.4.7.71 node_name="k8s-lb01.k8s-via-ansible.com" short_name="k8s-lb01" lb_name="lb-master"
+10.4.7.72 node_name="k8s-lb02.k8s-via-ansible.com" short_name="k8s-lb02" lb_name="lb-backup"
 
 [node]
 10.4.7.75 node_name="k8s-worker01.k8s-via-ansible.com" short_name="k8s-worker01"
@@ -24,13 +34,16 @@ node
 10.4.7.73
 
 [time_client]
+10.4.7.71
+10.4.7.72
+10.4.7.74
 10.4.7.75
 10.4.7.76
 
 [etcd]
 10.4.7.73 etcd_name=etcd-1
+10.4.7.74 etcd_name=etcd-2
 10.4.7.75 etcd_name=etcd-3
-10.4.7.76 etcd_name=etcd-2
 
 [new]
 #10.4.7.77 node_name="k8s-worker03.k8s-via-ansible.com" short_name="k8s-worker03"

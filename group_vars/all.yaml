@@ -12,6 +12,9 @@ pod_cidr: '10.244.0.0/16'
 service_nodeport_range: '30000-32767'
 cluster_domain: 'cluster.local'
 
+vip: '10.4.7.70'
+nic: 'eth0'
+
 # self-sign certificate trust list
 cert_hosts:
   k8s:
@@ -28,5 +31,5 @@ cert_hosts:
     - 10.4.7.88
   etcd:
     - 10.4.7.73
+    - 10.4.7.74
     - 10.4.7.75
-    - 10.4.7.76
